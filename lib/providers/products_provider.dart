@@ -13,7 +13,7 @@ final productsProvider = Provider<List<Product>>((ref) {
       id: '2',
       name: 'Хлеб',
       price: 1.99,
-      imageUrl: 'https://picsum.photos/250?image=9',
+      imageUrl: 'https://pngimg.com/uploads/naruto/naruto_PNG30.png',
     ),
   ];
 });
