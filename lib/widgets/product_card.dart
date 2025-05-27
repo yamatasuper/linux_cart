@@ -42,7 +42,7 @@ class ProductCard extends ConsumerWidget {
                 Text('${product.price.toStringAsFixed(2)} ${product.currency}'),
                 Text('Available: ${product.quantity}'),
                 const SizedBox(height: 8),
-                _buildAddToCartButton(ref),
+                _buildAddToCartButton(ref, context),
               ],
             ),
           ),
@@ -51,15 +51,32 @@ class ProductCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddToCartButton(WidgetRef ref) {
+// Update the _buildAddToCartButton method in ProductCard
+  Widget _buildAddToCartButton(WidgetRef ref, BuildContext context) {
+    final isLoading = ref
+        .watch(cartProvider.notifier)
+        .isLoading; // You'll need to add isLoading state to your notifier
+
+    if (isLoading) {
+      return const CircularProgressIndicator();
+    }
+
     if (!isInCart) {
       return ElevatedButton(
-        onPressed: () => ref.read(cartProvider.notifier).addToCart(product),
+        onPressed: () async {
+          try {
+            await ref.read(cartProvider.notifier).addToCart(product);
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to add to cart: $e')),
+            );
+          }
+        },
         child: const Text('Add to Cart'),
       );
     }
 
-    final cartItem = ref.watch(cartProvider.notifier).state.firstWhere(
+    final cartItem = ref.watch(cartProvider).firstWhere(
           (item) => item.product.id == product.id,
         );
 
@@ -68,14 +85,32 @@ class ProductCard extends ConsumerWidget {
       children: [
         IconButton(
           icon: const Icon(Icons.remove),
-          onPressed: () =>
-              ref.read(cartProvider.notifier).decrementQuantity(product.id),
+          onPressed: () async {
+            try {
+              await ref
+                  .read(cartProvider.notifier)
+                  .decrementQuantity(product.id);
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to update cart: $e')),
+              );
+            }
+          },
         ),
         Text(cartItem.quantity.toString()),
         IconButton(
           icon: const Icon(Icons.add),
-          onPressed: () =>
-              ref.read(cartProvider.notifier).incrementQuantity(product.id),
+          onPressed: () async {
+            try {
+              await ref
+                  .read(cartProvider.notifier)
+                  .incrementQuantity(product.id);
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to update cart: $e')),
+              );
+            }
+          },
         ),
       ],
     );

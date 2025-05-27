@@ -1,48 +1,102 @@
 import 'package:linux_cart/models/cart_item.dart';
 import 'package:linux_cart/models/product.dart';
+import 'package:linux_cart/providers/dio_provider.dart';
 import 'package:riverpod/riverpod.dart';
 
-// providers/cart_provider.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:linux_cart/api/cart_api.dart';
+
 class CartNotifier extends StateNotifier<List<CartItem>> {
-  CartNotifier() : super([]);
+  final Ref ref;
+  final int customerId; // Assume you have a customer ID
 
-  void addToCart(Product product) {
-    if (product.quantity <= 0) return;
+  CartNotifier(this.ref, this.customerId) : super([]) {
+    loadCart();
+  }
 
-    final index = state.indexWhere((item) => item.product.id == product.id);
-    if (index >= 0) {
-      state[index].quantity++;
-    } else {
-      state = [...state, CartItem(product: product, quantity: 1)];
+  CartApi get _cartApi => ref.read(cartApiProvider);
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  String? _error;
+  String? get error => _error;
+
+  Future<void> loadCart() async {
+    try {
+      final items = await _cartApi.getCartItems(customerId);
+      state = items;
+    } catch (e) {
+      // Handle error
     }
-    state = [...state]; // Trigger update
   }
 
-  void removeFromCart(int productId) {
-    state = state.where((item) => item.product.id != productId).toList();
+  double get totalPrice {
+    return state.fold(
+      0,
+      (sum, item) => sum + item.totalPrice,
+    );
   }
 
-  void incrementQuantity(int productId) {
-    state = state.map((item) {
-      if (item.product.id == productId) {
-        return CartItem(product: item.product, quantity: item.quantity + 1);
+  Future<void> addToCart(Product product) async {
+    try {
+      final existingIndex =
+          state.indexWhere((item) => item.product.id == product.id);
+
+      if (existingIndex >= 0) {
+        // Item exists, increment quantity
+        await incrementQuantity(product.id);
+      } else {
+        // Add new item
+        await _cartApi.addToCart(customerId, product.id, 1);
+        await loadCart(); // Refresh cart from backend
       }
-      return item;
-    }).toList();
+    } catch (e) {
+      // Handle error
+    }
   }
 
-  void decrementQuantity(int productId) {
-    state = state.map((item) {
-      if (item.product.id == productId && item.quantity > 1) {
-        return CartItem(product: item.product, quantity: item.quantity - 1);
+  Future<void> incrementQuantity(int productId) async {
+    try {
+      final item = state.firstWhere((item) => item.product.id == productId);
+      await _cartApi.updateQuantity(customerId, productId, item.quantity + 1);
+      await loadCart();
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  Future<void> decrementQuantity(int productId) async {
+    try {
+      final item = state.firstWhere((item) => item.product.id == productId);
+      if (item.quantity > 1) {
+        await _cartApi.updateQuantity(customerId, productId, item.quantity - 1);
+      } else {
+        await removeFromCart(productId);
       }
-      return item;
-    }).toList();
+      await loadCart();
+    } catch (e) {
+      // Handle error
+    }
   }
 
-  double get totalPrice => state.fold(0, (sum, item) => sum + item.totalPrice);
+  Future<void> removeFromCart(int productId) async {
+    try {
+      await _cartApi.removeFromCart(customerId, productId);
+      await loadCart();
+    } catch (e) {
+      // Handle error
+    }
+  }
 }
 
+final cartApiProvider = Provider<CartApi>((ref) {
+  final dio = ref.read(dioProvider); // You might need to create a dioProvider
+  return CartApi(dio);
+});
+
 final cartProvider = StateNotifierProvider<CartNotifier, List<CartItem>>((ref) {
-  return CartNotifier();
+  // You need to provide customerId here - could be from auth provider
+  const customerId = 1; // Replace with actual customer ID
+  return CartNotifier(ref, customerId);
 });
