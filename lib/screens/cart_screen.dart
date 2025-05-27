@@ -20,7 +20,8 @@ class CartScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final item = cartItems[index];
                 return ListTile(
-                  leading: Image.network(item.product.imageUrl, width: 50),
+                  leading:
+                      Image.network(item.product.imageUrl ?? '', width: 50),
                   title: Text(item.product.name),
                   subtitle: Text(
                       'Количество: ${item.quantity}\nВсего: \$${item.totalPrice.toStringAsFixed(2)}'),

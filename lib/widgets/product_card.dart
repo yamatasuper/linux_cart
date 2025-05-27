@@ -6,6 +6,7 @@ import 'package:linux_cart/providers/cart_provider.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// widgets/product_card.dart
 class ProductCard extends ConsumerWidget {
   final Product product;
   final bool isInCart;
@@ -22,34 +23,24 @@ class ProductCard extends ConsumerWidget {
       child: Column(
         children: [
           Expanded(
-              child: Image.network(
-            product.imageUrl,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return const Icon(Icons.error_outline, color: Colors.red);
-            },
-          )),
+            child: product.imageUrl != null
+                ? Image.network(
+                    product.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.error),
+                  )
+                : const Icon(Icons.image, size: 50),
+          ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  product.name,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                Text('\$${product.price.toStringAsFixed(2)}'),
+                Text(product.name,
+                    style: Theme.of(context).textTheme.titleLarge),
+                Text('${product.price.toStringAsFixed(2)} ${product.currency}'),
+                Text('Available: ${product.quantity}'),
                 const SizedBox(height: 8),
                 _buildAddToCartButton(ref),
               ],
@@ -64,13 +55,12 @@ class ProductCard extends ConsumerWidget {
     if (!isInCart) {
       return ElevatedButton(
         onPressed: () => ref.read(cartProvider.notifier).addToCart(product),
-        child: const Text('Добавить в корзину'),
+        child: const Text('Add to Cart'),
       );
     }
 
-    final cartItem = ref.watch(cartProvider).firstWhere(
+    final cartItem = ref.watch(cartProvider.notifier).state.firstWhere(
           (item) => item.product.id == product.id,
-          orElse: () => CartItem(product: product, quantity: 0),
         );
 
     return Row(
