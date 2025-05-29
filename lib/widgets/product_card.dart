@@ -6,7 +6,6 @@ import 'package:linux_cart/providers/cart_provider.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// widgets/product_card.dart
 class ProductCard extends ConsumerWidget {
   final Product product;
   final bool isInCart;
@@ -19,18 +18,31 @@ class ProductCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final firstImageUrl =
+        product.imageUrls?.isNotEmpty == true ? product.imageUrls!.first : null;
     return Card(
       child: Column(
         children: [
           Expanded(
-            child: product.imageUrl != null
+            child: firstImageUrl != null
                 ? Image.network(
-                    product.imageUrl!,
+                    firstImageUrl,
                     fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
+                    },
                     errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.error),
+                        const Icon(Icons.broken_image),
                   )
-                : const Icon(Icons.image, size: 50),
+                : const Placeholder(), // Или другой виджет для отсутствия изображения
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),

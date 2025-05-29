@@ -8,7 +8,7 @@ class Product {
   final int quantity;
   final String currency;
   final bool? isAvailable;
-  final String? imageUrl;
+  final List<String>? imageUrls;
 
   Product({
     required this.id,
@@ -20,7 +20,7 @@ class Product {
     required this.quantity,
     required this.currency,
     this.isAvailable,
-    this.imageUrl,
+    this.imageUrls,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -34,7 +34,9 @@ class Product {
       quantity: json['quantity'] as int? ?? 0,
       currency: json['currency'] as String,
       isAvailable: json['isAvailable'] as bool?,
-      imageUrl: json['imageUrl'] as String?,
+      imageUrls: json['imageUrls'] != null
+          ? List<String>.from(json['imageUrls'])
+          : null,
     );
   }
 
@@ -49,7 +51,7 @@ class Product {
       'quantity': quantity,
       'currency': currency,
       'isAvailable': isAvailable,
-      'imageUrl': imageUrl,
+      'imageUrl': imageUrls,
     };
   }
 }

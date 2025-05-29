@@ -24,7 +24,7 @@ class CartApi {
               : (item['price'] as num).toDouble(),
           quantity: 0, // This might not be needed for cart items
           currency: item['currency'],
-          imageUrl: item['imageUrl'],
+          imageUrls: item['imageUrl'],
         );
 
         return CartItem(
